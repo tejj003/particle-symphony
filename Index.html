@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Particle Symphony Studio</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@200;300;400;500;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #000000;
+            --bg-secondary: #1c1c1e;
+            --bg-tertiary: #2c2c2e;
+            --text-primary: #ffffff;
+            --text-secondary: #8e8e93;
+            --accent-blue: #007aff;
+            --accent-green: #34c759;
+            --accent-red: #ff3b30;
+            --accent-purple: #af52de;
+            --accent-pink: #ff2d55;
+            --accent-orange: #ff9500;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            color: var(--text-primary);
+            overflow: hidden;
+            cursor: none;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: transparent;
+            cursor: none;
+        }
+
+        .ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .control-panel {
+            position: absolute;
+            top: 24px;
+            left: 24px;
+            padding: 0;
+            pointer-events: all;
+            opacity: 0;
+            transform: translateY(-20px);
+            animation: fadeInDown 0.6s ease-out 0.3s forwards;
+            max-width: 380px;
+            width: 380px;
+        }
+
+        .tab-container {
+            display: flex;
+            background: var(--glass-bg);
+            border-radius: 24px 24px 0 0;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+            border-bottom: none;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 16px 24px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .tab-button:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-button.active {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .tab-button.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--accent-blue);
+        }
+
+        .tab-content {
+            background: var(--glass-bg);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-top: none;
+            border-radius: 0 0 24px 24px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        /* Custom scrollbar */
+        .tab-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .tab-content::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+
+        .tab-content::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+
+        .tab-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .control-group {
+            margin-bottom: 24px;
+        }
+
+        .control-group h4 {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 12px;
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at center, transparent, rgba(255, 255, 255, 0.1));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .btn:hover::before {
+            opacity: 1;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .btn.active {
+            background: var(--accent-blue);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 20px rgba(0, 122, 255, 0.3);
+        }
+
+        .slider-control {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .slider-control label {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+            min-width: 60px;
+        }
+
+        .slider {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+            appearance: none;
+            -webkit-appearance: none;
+            position: relative;
+        }
+
+        .slider::-webkit-slider-thumb {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        .value-display {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--accent-blue);
+            min-width: 40px;
+            text-align: right;
+        }
+
+        @keyframes fadeInDown {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.9; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(-50%) translateY(-20px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes fadeInRight {
+            from {
+                opacity: 0;
+                transform: translateY(-50%) translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(-50%) translateX(0);
+            }
+        }
+
+        .wave-visualizer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 80px;
+            pointer-events: none;
+            opacity: 0.6;
+            z-index: 5;
+        }
+
+        .info-panel {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            transform: translateX(0);
+            left: auto;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 16px 20px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            pointer-events: none;
+            opacity: 0;
+            animation: fadeInDown 0.6s ease-out 0.9s forwards;
+            max-width: 300px;
+        }
+
+        @media (max-width: 768px) {
+            .control-panel {
+                position: fixed;
+                width: calc(100% - 48px);
+                max-width: none;
+                top: 24px;
+                left: 24px;
+                right: 24px;
+            }
+            
+            .tab-content {
+                max-height: 40vh;
+            }
+            
+            .info-panel {
+                display: none;
+            }
+        }
+
+        /* Loading animation */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
+        .loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-content {
+            text-align: center;
+        }
+
+        .loading-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 20px;
+            animation: rotate 1s linear infinite;
+        }
+
+        @keyframes rotate {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-content">
+            <div class="loading-icon">
+                <svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="30" cy="30" r="20" fill="none" stroke="#007aff" stroke-width="4" stroke-dasharray="31.4 31.4" stroke-linecap="round" transform="rotate(-90 30 30)"/>
+                </svg>
+            </div>
+            <p style="color: var(--text-secondary); font-size: 14px;">Loading Symphony...</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <canvas id="canvas"></canvas>
+        
+        <div class="ui-overlay">
+            <div class="control-panel">
+                <div class="tab-container">
+                    <button class="tab-button active" data-tab="particles">Particles</button>
+                    <button class="tab-button" data-tab="physics">Physics</button>
+                </div>
+                
+                <div class="tab-content">
+                    <div class="tab-panel active" id="particles-tab">
+                        <h2 class="title">Particle Symphony</h2>
+                        
+                        <div class="control-group">
+                            <h4>Particle Type</h4>
+                            <div class="button-group">
+                                <button class="btn active" data-particle="sparkle">✨ Sparkle</button>
+                                <button class="btn" data-particle="fire">🔥 Fire</button>
+                                <button class="btn" data-particle="water">💧 Water</button>
+                                <button class="btn" data-particle="electric">⚡ Electric</button>
+                            </div>
+                        </div>
+
+                        <div class="control-group">
+                            <h4>Musical Scale</h4>
+                            <div class="button-group">
+                                <button class="btn active" data-scale="pentatonic">Pentatonic</button>
+                                <button class="btn" data-scale="major">Major</button>
+                                <button class="btn" data-scale="minor">Minor</button>
+                                <button class="btn" data-scale="chromatic">Chromatic</button>
+                            </div>
+                        </div>
+
+                        <div class="section-divider"></div>
+
+                        <div class="control-group">
+                            <h4>Controls</h4>
+                            <div class="slider-control">
+                                <label>Size</label>
+                                <input type="range" class="slider" id="particleSize" min="1" max="10" value="3">
+                                <span class="value-display" id="sizeValue">3</span>
+                            </div>
+                            <div class="slider-control">
+                                <label>Speed</label>
+                                <input type="range" class="slider" id="particleSpeed" min="0.1" max="3" step="0.1" value="1">
+                                <span class="value-display" id="speedValue">1.0</span>
+                            </div>
+                            <div class="slider-control">
+                                <label>Volume</label>
+                                <input type="range" class="slider" id="volume" min="0" max="100" value="50">
+                                <span class="value-display" id="volumeValue">50</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-panel" id="physics-tab">
+                        <h2 class="title">Physics Engine</h2>
+                        
+                        <div class="control-group">
+                            <h4>Forces</h4>
+                            <div class="slider-control">
+                                <label>Gravity</label>
+                                <input type="range" class="slider" id="gravity" min="-2" max="2" step="0.1" value="0.1">
+                                <span class="value-display" id="gravityValue">0.1</span>
+                            </div>
+                            <div class="slider-control">
+                                <label>Wind</label>
+                                <input type="range" class="slider" id="wind" min="-1" max="1" step="0.1" value="0">
+                                <span class="value-display" id="windValue">0</span>
+                            </div>
+                            <div class="slider-control">
+                                <label>Friction</label>
+                                <input type="range" class="slider" id="friction" min="0.9" max="1" step="0.01" value="0.98">
+                                <span class="value-display" id="frictionValue">0.98</span>
+                            </div>
+                        </div>
+
+                        <div class="section-divider"></div>
+
+                        <div class="control-group">
+                            <h4>Effects</h4>
+                            <div class="button-group">
+                                <button class="btn" data-effect="magnetic">🧲 Magnetic</button>
+                                <button class="btn" data-effect="repel">💥 Repel</button>
+                                <button class="btn" data-effect="orbit">🌍 Orbit</button>
+                                <button class="btn active" data-effect="none">✖️ None</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-panel glass-panel">
+                <div>🎨 Click and drag to create particles</div>
+                <div>🎵 Each particle generates a musical note</div>
+                <div>🎹 Different colors create unique sounds</div>
+            </div>
+        </div>
+
+        <canvas class="wave-visualizer" id="waveCanvas"></canvas>
+        <div class="cursor-trail" id="cursorTrail"></div>
+    </div>
+
+    <script>
+        class ParticleSymphony {
+            constructor() {
+                this.canvas = document.getElementById('canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.waveCanvas = document.getElementById('waveCanvas');
+                this.waveCtx = this.waveCanvas.getContext('2d');
+                
+                this.particles = [];
+                this.notes = [];
+                this.isDrawing = false;
+                
+                // Settings
+                this.particleType = 'sparkle';
+                this.scale = 'pentatonic';
+                this.particleSize = 3;
+                this.particleSpeed = 1;
+                this.gravity = 0.1;
+                this.wind = 0;
+                this.friction = 0.98;
+                this.effect = 'none';
+                
+                // Audio context
+                this.audioContext = null;
+                this.oscillators = new Map();
+                
+                // Musical scales
+                this.scales = {
+                    pentatonic: [261.63, 293.66, 329.63, 392.00, 440.00],
+                    major: [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88],
+                    minor: [261.63, 293.66, 311.13, 349.23, 392.00, 415.30, 466.16],
+                    chromatic: [261.63, 277.18, 293.66, 311.13, 329.63, 349.23, 369.99, 392.00, 415.30, 440.00, 466.16, 493.88]
+                };
+                
+                this.colors = {
+                    sparkle: ['#ff6b6b', '#4ecdc4', '#45b7d1', '#ffeaa7', '#dda0dd'],
+                    fire: ['#ff4757', '#ff3838', '#ff6348', '#ffa502', '#ff7675'],
+                    water: ['#00d2d3', '#0abde3', '#006ba6', '#74b9ff', '#0984e3'],
+                    electric: ['#a29bfe', '#6c5ce7', '#fd79a8', '#e84393', '#00b894']
+                };
+                
+                this.init();
+            }
+            
+            init() {
+                this.resizeCanvas();
+                this.setupEventListeners();
+                this.startAnimation();
+                this.setupCursorTrail();
+                
+                // Initialize audio context on user interaction
+                document.addEventListener('click', () => {
+                    if (!this.audioContext) {
+                        this.initAudio();
+                    }
+                }, { once: true });
+            }
+            
+            initAudio() {
+                try {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    
+                    // Create master gain node
+                    this.masterGain = this.audioContext.createGain();
+                    this.masterGain.gain.setValueAtTime(0.5, this.audioContext.currentTime);
+                    
+                    // Create analyser for visualization
+                    this.analyser = this.audioContext.createAnalyser();
+                    this.analyser.fftSize = 256;
+                    
+                    // Connect master gain to analyser and destination
+                    this.masterGain.connect(this.analyser);
+                    this.masterGain.connect(this.audioContext.destination);
+                } catch (e) {
+                    console.log('Audio not supported:', e);
+                }
+            }
+            
+            resizeCanvas() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+                this.waveCanvas.width = window.innerWidth;
+                this.waveCanvas.height = 60;
+            }
+            
+            setupEventListeners() {
+                // Canvas events
+                this.canvas.addEventListener('mousedown', (e) => this.startDrawing(e));
+                this.canvas.addEventListener('mousemove', (e) => this.draw(e));
+                this.canvas.addEventListener('mouseup', () => this.stopDrawing());
+                this.canvas.addEventListener('mouseleave', () => this.stopDrawing());
+                
+                // Touch events
+                this.canvas.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    this.startDrawing(e.touches[0]);
+                });
+                this.canvas.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    this.draw(e.touches[0]);
+                });
+                this.canvas.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    this.stopDrawing();
+                });
+                
+                // Controls
+                document.querySelectorAll('[data-particle]').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelector('[data-particle].active').classList.remove('active');
+                        e.target.classList.add('active');
+                        this.particleType = e.target.dataset.particle;
+                    });
+                });
+                
+                document.querySelectorAll('[data-scale]').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelector('[data-scale].active').classList.remove('active');
+                        e.target.classList.add('active');
+                        this.scale = e.target.dataset.scale;
+                    });
+                });
+                
+                document.querySelectorAll('[data-effect]').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelector('[data-effect].active')?.classList.remove('active');
+                        e.target.classList.add('active');
+                        this.effect = e.target.dataset.effect;
+                    });
+                });
+                
+                // Sliders
+                this.setupSlider('particleSize', 'sizeValue');
+                this.setupSlider('particleSpeed', 'speedValue');
+                this.setupSlider('gravity', 'gravityValue');
+                this.setupSlider('wind', 'windValue');
+                this.setupSlider('friction', 'frictionValue');
+                
+                // Tab switching
+                document.querySelectorAll('.tab-button').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const tabName = e.target.dataset.tab;
+                        
+                        // Update active states
+                        document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+                        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+                        
+                        e.target.classList.add('active');
+                        document.getElementById(`${tabName}-tab`).classList.add('active');
+                    });
+                });
+                
+                window.addEventListener('resize', () => this.resizeCanvas());
+            }
+            
+            setupSlider(sliderId, valueId) {
+                const slider = document.getElementById(sliderId);
+                const valueDisplay = document.getElementById(valueId);
+                
+                slider.addEventListener('input', (e) => {
+                    this[sliderId] = parseFloat(e.target.value);
+                    valueDisplay.textContent = e.target.value;
+                });
+            }
+            
+            setupCursorTrail() {
+                const trail = document.getElementById('cursorTrail');
+                
+                document.addEventListener('mousemove', (e) => {
+                    trail.style.left = e.clientX - 10 + 'px';
+                    trail.style.top = e.clientY - 10 + 'px';
+                });
+            }
+            
+            startDrawing(e) {
+                this.isDrawing = true;
+                this.draw(e);
+            }
+            
+            draw(e) {
+                if (!this.isDrawing) return;
+                
+                const rect = this.canvas.getBoundingClientRect();
+                const x = (e.clientX || e.pageX) - rect.left;
+                const y = (e.clientY || e.pageY) - rect.top;
+                
+                // Create multiple particles for richer effect
+                for (let i = 0; i < 3; i++) {
+                    this.createParticle(x + (Math.random() - 0.5) * 20, y + (Math.random() - 0.5) * 20);
+                }
+            }
+            
+            stopDrawing() {
+                this.isDrawing = false;
+            }
+            
+            createParticle(x, y) {
+                const colors = this.colors[this.particleType];
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                
+                const particle = {
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 4 * this.particleSpeed,
+                    vy: (Math.random() - 0.5) * 4 * this.particleSpeed,
+                    size: this.particleSize + Math.random() * 3,
+                    color: color,
+                    life: 1,
+                    decay: 0.02 + Math.random() * 0.02,
+                    type: this.particleType,
+                    note: this.getRandomNote(),
+                    playTime: 0
+                };
+                
+                this.particles.push(particle);
+                this.playNote(particle.note, color);
+            }
+            
+            getRandomNote() {
+                const scale = this.scales[this.scale];
+                return scale[Math.floor(Math.random() * scale.length)];
+            }
+            
+            getWaveType(color) {
+                const colorMap = {
+                    '#ff6b6b': 'sine',
+                    '#4ecdc4': 'square',
+                    '#45b7d1': 'triangle',
+                    '#ffeaa7': 'sawtooth'
+                };
+                return colorMap[color] || 'sine';
+            }
+            
+            updateParticles() {
+                for (let i = this.particles.length - 1; i >= 0; i--) {
+                    const p = this.particles[i];
+                    
+                    // Apply physics
+                    p.vy += this.gravity;
+                    p.vx += this.wind;
+                    
+                    // Apply effects
+                    if (this.effect === 'magnetic') {
+                        const centerX = this.canvas.width / 2;
+                        const centerY = this.canvas.height / 2;
+                        const dx = centerX - p.x;
+                        const dy = centerY - p.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        if (distance > 0) {
+                            p.vx += (dx / distance) * 0.1;
+                            p.vy += (dy / distance) * 0.1;
+                        }
+                    } else if (this.effect === 'repel') {
+                        const centerX = this.canvas.width / 2;
+                        const centerY = this.canvas.height / 2;
+                        const dx = p.x - centerX;
+                        const dy = p.y - centerY;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        if (distance > 0 && distance < 200) {
+                            p.vx += (dx / distance) * 0.2;
+                            p.vy += (dy / distance) * 0.2;
+                        }
+                    } else if (this.effect === 'orbit') {
+                        const centerX = this.canvas.width / 2;
+                        const centerY = this.canvas.height / 2;
+                        const dx = p.x - centerX;
+                        const dy = p.y - centerY;
+                        p.vx += -dy * 0.001;
+                        p.vy += dx * 0.001;
+                    }
+                    
+                    // Apply friction
+                    p.vx *= this.friction;
+                    p.vy *= this.friction;
+                    
+                    // Update position
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    
+                    // Update life
+                    p.life -= p.decay;
+                    p.playTime++;
+                    
+                    // Remove dead particles
+                    if (p.life <= 0) {
+                        this.particles.splice(i, 1);
+                    }
+                }
+            }
+            
+            drawParticles() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Draw background effects
+                this.drawBackground();
+                
+                this.particles.forEach(p => {
+                    this.ctx.save();
+                    
+                    const alpha = p.life;
+                    this.ctx.globalAlpha = alpha;
+                    
+                    if (p.type === 'sparkle') {
+                        this.drawSparkle(p);
+                    } else if (p.type === 'fire') {
+                        this.drawFire(p);
+                    } else if (p.type === 'water') {
+                        this.drawWater(p);
+                    } else if (p.type === 'electric') {
+                        this.drawElectric(p);
+                    }
+                    
+                    this.ctx.restore();
+                });
+            }
+            
+            drawBackground() {
+                // Draw subtle grid
+                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+                this.ctx.lineWidth = 1;
+                
+                for (let x = 0; x < this.canvas.width; x += 50) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, 0);
+                    this.ctx.lineTo(x, this.canvas.height);
+                    this.ctx.stroke();
+                }
+                
+                for (let y = 0; y < this.canvas.height; y += 50) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(0, y);
+                    this.ctx.lineTo(this.canvas.width, y);
+                    this.ctx.stroke();
+                }
+            }
+            
+            drawSparkle(p) {
+                const gradient = this.ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 3);
+                gradient.addColorStop(0, p.color);
+                gradient.addColorStop(1, 'transparent');
+                
+                this.ctx.fillStyle = gradient;
+                this.ctx.beginPath();
+                this.ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2);
+                this.ctx.fill();
+                
+                // Central bright point
+                this.ctx.fillStyle = p.color;
+                this.ctx.beginPath();
+                this.ctx.arc(p.x, p.y, p.size * 0.5, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
+            
+            drawFire(p) {
+                // Flame shape
+                this.ctx.fillStyle = p.color;
+                this.ctx.beginPath();
+                this.ctx.ellipse(p.x, p.y, p.size, p.size * 1.5, Math.PI, 0, Math.PI * 2);
+                this.ctx.fill();
+                
+                // Glow effect
+                const gradient = this.ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 4);
+                gradient.addColorStop(0, p.color + '80');
+                gradient.addColorStop(1, 'transparent');
+                
+                this.ctx.fillStyle = gradient;
+                this.ctx.beginPath();
+                this.ctx.arc(p.x, p.y, p.size * 4, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
+            
+            drawWater(p) {
+                // Water drop
+                this.ctx.fillStyle = p.color;
+                this.ctx.beginPath();
+                this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                this.ctx.fill();
+                
+                // Reflection highlight
+                this.ctx.fillStyle = '#ffffff60';
+                this.ctx.beginPath();
+                this.ctx.arc(p.x - p.size * 0.3, p.y - p.size * 0.3, p.size * 0.3, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
+            
+            drawElectric(p) {
+                // Lightning bolt effect
+                this.ctx.strokeStyle = p.color;
+                this.ctx.lineWidth = 2;
+                this.ctx.shadowBlur = 10;
+                this.ctx.shadowColor = p.color;
+                
+                // Draw jagged line
+                const segments = 5;
+                this.ctx.beginPath();
+                this.ctx.moveTo(p.x, p.y);
+                
+                for (let i = 1; i <= segments; i++) {
+                    const offsetX = (Math.random() - 0.5) * p.size * 2;
+                    const offsetY = (i / segments) * p.size * 3;
+                    this.ctx.lineTo(p.x + offsetX, p.y + offsetY);
+                }
+                
+                this.ctx.stroke();
+                this.ctx.shadowBlur = 0;
+                
+                // Glow
+                const gradient = this.ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 5);
+                gradient.addColorStop(0, p.color + '40');
+                gradient.addColorStop(1, 'transparent');
+                
+                this.ctx.fillStyle = gradient;
+                this.ctx.beginPath();
+                this.ctx.arc(p.x, p.y, p.size * 5, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
+            
+            drawWaveform() {
+                this.waveCtx.clearRect(0, 0, this.waveCanvas.width, this.waveCanvas.height);
+                
+                if (!this.audioContext || !this.analyser) return;
+                
+                const bufferLength = this.analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+                this.analyser.getByteFrequencyData(dataArray);
+                
+                const barWidth = (this.waveCanvas.width / bufferLength) * 2.5;
+                let x = 0;
+                
+                for (let i = 0; i < bufferLength; i++) {
+                    const barHeight = (dataArray[i] / 255) * this.waveCanvas.height * 0.8;
+                    
+                    const gradient = this.waveCtx.createLinearGradient(0, this.waveCanvas.height, 0, this.waveCanvas.height - barHeight);
+                    gradient.addColorStop(0, 'rgba(0, 122, 255, 0.2)');
+                    gradient.addColorStop(1, 'rgba(0, 122, 255, 0.8)');
+                    
+                    this.waveCtx.fillStyle = gradient;
+                    this.waveCtx.fillRect(x, this.waveCanvas.height - barHeight, barWidth, barHeight);
+                    
+                    x += barWidth + 1;
+                }
+            }
+            
+            startAnimation() {
+                const animate = () => {
+                    this.updateParticles();
+                    this.drawParticles();
+                    this.drawWaveform();
+                    requestAnimationFrame(animate);
+                };
+                animate();
+                
+                // Hide loading screen after a short delay
+                setTimeout(() => {
+                    const loadingScreen = document.getElementById('loadingScreen');
+                    if (loadingScreen) {
+                        loadingScreen.classList.add('hidden');
+                    }
+                }, 1000);
+            }
+            
+            playNote(frequency, color) {
+                if (!this.audioContext) return;
+                
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    
+                    // Create a more complex sound with harmonics
+                    const harmonic1 = this.audioContext.createOscillator();
+                    const harmonic2 = this.audioContext.createOscillator();
+                    const harmonicGain1 = this.audioContext.createGain();
+                    const harmonicGain2 = this.audioContext.createGain();
+                    
+                    // Set frequencies
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    harmonic1.frequency.setValueAtTime(frequency * 2, this.audioContext.currentTime);
+                    harmonic2.frequency.setValueAtTime(frequency * 3, this.audioContext.currentTime);
+                    
+                    // Set wave types
+                    oscillator.type = this.getWaveType(color);
+                    harmonic1.type = 'sine';
+                    harmonic2.type = 'sine';
+                    
+                    // Set harmonic gains (lower than fundamental)
+                    harmonicGain1.gain.setValueAtTime(0.3, this.audioContext.currentTime);
+                    harmonicGain2.gain.setValueAtTime(0.15, this.audioContext.currentTime);
+                    
+                    // Connect harmonics
+                    harmonic1.connect(harmonicGain1);
+                    harmonic2.connect(harmonicGain2);
+                    harmonicGain1.connect(gainNode);
+                    harmonicGain2.connect(gainNode);
+                    
+                    // Connect main oscillator
+                    oscillator.connect(gainNode);
+                    
+                    // Connect to master gain
+                    gainNode.connect(this.masterGain);
+                    
+                    // Get volume from slider
+                    const volume = (document.getElementById('volume').value / 100) * 0.2;
+                    
+                    // ADSR envelope
+                    const now = this.audioContext.currentTime;
+                    gainNode.gain.setValueAtTime(0, now);
+                    gainNode.gain.linearRampToValueAtTime(volume, now + 0.02); // Attack
+                    gainNode.gain.exponentialRampToValueAtTime(volume * 0.7, now + 0.1); // Decay
+                    gainNode.gain.setValueAtTime(volume * 0.7, now + 0.3); // Sustain
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5); // Release
+                    
+                    // Start and stop all oscillators
+                    oscillator.start(now);
+                    harmonic1.start(now);
+                    harmonic2.start(now);
+                    
+                    oscillator.stop(now + 0.5);
+                    harmonic1.stop(now + 0.5);
+                    harmonic2.stop(now + 0.5);
+                } catch (e) {
+                    console.log('Audio playback failed:', e);
+                }
+            }
+        }
+        
+        // Initialize the application
+        window.addEventListener('DOMContentLoaded', () => {
+            const symphony = new ParticleSymphony();
+            
+            // Add volume control
+            document.getElementById('volume').addEventListener('input', (e) => {
+                const value = e.target.value;
+                document.getElementById('volumeValue').textContent = value;
+                if (symphony.masterGain) {
+                    symphony.masterGain.gain.setValueAtTime(value / 100, symphony.audioContext.currentTime);
+                }
+            });
+            
+            // Cursor trail enhancement
+            let mouseDown = false;
+            document.addEventListener('mousedown', () => {
+                mouseDown = true;
+                document.getElementById('cursorTrail').classList.add('active');
+            });
+            
+            document.addEventListener('mouseup', () => {
+                mouseDown = false;
+                document.getElementById('cursorTrail').classList.remove('active');
+            });
+            
+            // Fix for mobile cursor
+            document.addEventListener('touchstart', (e) => {
+                const touch = e.touches[0];
+                const trail = document.getElementById('cursorTrail');
+                trail.style.left = touch.clientX - 12 + 'px';
+                trail.style.top = touch.clientY - 12 + 'px';
+                trail.classList.add('active');
+            });
+            
+            document.addEventListener('touchmove', (e) => {
+                const touch = e.touches[0];
+                const trail = document.getElementById('cursorTrail');
+                trail.style.left = touch.clientX - 12 + 'px';
+                trail.style.top = touch.clientY - 12 + 'px';
+            });
+            
+            document.addEventListener('touchend', () => {
+                document.getElementById('cursorTrail').classList.remove('active');
+            });
+        });
+    </script>
+</body>
+</html>
+                        });
+                    }
+                    
+                    // Setup media recorder with the combined stream
+                    const options = {
+                        mimeType: 'video/webm;codecs=vp9,opus',
+                        videoBitsPerSecond: 5000000, // 5 Mbps
+                        audioBitsPerSecond: 128000 // 128 kbps
+                    };
+                    
+                    // Fallback to different codecs if vp9 is not supported
+                    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                        options.mimeType = 'video/webm;codecs=vp8,opus';
+                        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                            options.mimeType = 'video/webm';
+                        }
+                    }
+                    
+                    this.mediaRecorder = new MediaRecorder(combinedStream, options);
+                    this.recordedChunks = [];
+                    
+                    this.mediaRecorder.ondataavailable = (event) => {
+                        if (event.data.size > 0) {
+                            this.recordedChunks.push(event.data);
+                        }
+                    };
+                    
+                    this.mediaRecorder.onstop = () => {
+                        this.isVideoRecording = false;
+                        // Disconnect any temporary connections if needed
+                    };
+                    
+                    // Start recording with 100ms chunks for better quality
+                    this.mediaRecorder.start(100);
+                    this.isVideoRecording = true;
+                    
+                    console.log('Video recording started with audio');
+                } catch (error) {
+                    console.error('Failed to start video recording:', error);
+                    this.showNotification('Video recording failed. Will save as JSON instead.', 'error');
+                }
+            }
+            
+            playRecording() {
+                if (this.recordedSequence.length === 0) return;
+                
+                const startTime = this.recordedSequence[0].time;
+                this.recordedSequence.forEach(event => {
+                    const delay = event.time - startTime;
+                    setTimeout(() => {
+                        this.createParticle(event.x, event.y);
+                    }, delay);
+                });
+            }
+            
+            clearAll() {
+                this.particles = [];
+                this.recordedSequence = [];
+            }
+            
+            saveComposition() {
+                // If we have video chunks, save as video
+                if (this.recordedChunks.length > 0) {
+                    this.saveAsVideo();
+                } else {
+                    // Otherwise, save as JSON
+                    this.saveAsJSON();
+                }
+            }
+            
+            async saveAsVideo() {
+                try {
+                    // Create a blob from recorded chunks
+                    const blob = new Blob(this.recordedChunks, { type: 'video/webm' });
+                    
+                    // Convert to MP4 if possible (using browser's built-in capabilities)
+                    let finalBlob = blob;
+                    let filename = `particle-symphony-${Date.now()}.webm`;
+                    
+                    // For true MP4 conversion, we would need a library like ffmpeg.js
+                    // For now, we'll save as WebM which most modern players can handle
+                    // If you need true MP4, you can use a service or library to convert
+                    
+                    // Create download link
+                    const url = URL.createObjectURL(finalBlob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    // Clear recorded chunks
+                    this.recordedChunks = [];
+                    
+                    // Show success message
+                    this.showNotification('Video exported successfully! 🎬');
+                } catch (error) {
+                    console.error('Failed to save video:', error);
+                    this.showNotification('Failed to export video. Saving as JSON instead...', 'error');
+                    this.saveAsJSON();
+                }
+            }
+            
+            saveAsJSON() {
+                const data = {
+                    version: '1.0',
+                    timestamp: new Date().toISOString(),
+                    sequence: this.recordedSequence,
+                    settings: {
+                        particleType: this.particleType,
+                        scale: this.scale,
+                        particleSize: this.particleSize,
+                        particleSpeed: this.particleSpeed,
+                        gravity: this.gravity,
+                        wind: this.wind,
+                        friction: this.friction,
+                        effect: this.effect
+                    }
+                };
+                
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `particle-symphony-${Date.now()}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                this.showNotification('Composition exported as JSON! 📄');
+            }
+            
+            showNotification(message, type = 'success') {
+                // Create notification element
+                const notification = document.createElement('div');
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 80px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    padding: 16px 24px;
+                    background: ${type === 'success' ? 'var(--accent-green)' : 'var(--accent-red)'};
+                    color: white;
+                    border-radius: 12px;
+                    font-weight: 500;
+                    z-index: 10000;
+                    animation: slideDown 0.3s ease-out;
+                `;
+                notification.textContent = message;
+                
+                document.body.appendChild(notification);
+                
+                // Remove after 3 seconds
+                setTimeout(() => {
+                    notification.style.animation = 'slideUp 0.3s ease-out';
+                    setTimeout(() => notification.remove(), 300);
+                }, 3000);
+            }
+            
+            startAnimation() {
+                const animate = () => {
+                    this.updateParticles();
+                    this.drawParticles();
+                    this.drawWaveform();
+                    requestAnimationFrame(animate);
+                };
+                animate();
+                
+                // Hide loading screen after a short delay
+                setTimeout(() => {
+                    const loadingScreen = document.getElementById('loadingScreen');
+                    if (loadingScreen) {
+                        loadingScreen.classList.add('hidden');
+                    }
+                }, 1000);
+            }
+            
+            playNote(frequency, color) {
+                if (!this.audioContext) return;
+                
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    
+                    // Create a more complex sound with harmonics
+                    const harmonic1 = this.audioContext.createOscillator();
+                    const harmonic2 = this.audioContext.createOscillator();
+                    const harmonicGain1 = this.audioContext.createGain();
+                    const harmonicGain2 = this.audioContext.createGain();
+                    
+                    // Set frequencies
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    harmonic1.frequency.setValueAtTime(frequency * 2, this.audioContext.currentTime);
+                    harmonic2.frequency.setValueAtTime(frequency * 3, this.audioContext.currentTime);
+                    
+                    // Set wave types
+                    oscillator.type = this.getWaveType(color);
+                    harmonic1.type = 'sine';
+                    harmonic2.type = 'sine';
+                    
+                    // Set harmonic gains (lower than fundamental)
+                    harmonicGain1.gain.setValueAtTime(0.3, this.audioContext.currentTime);
+                    harmonicGain2.gain.setValueAtTime(0.15, this.audioContext.currentTime);
+                    
+                    // Connect harmonics
+                    harmonic1.connect(harmonicGain1);
+                    harmonic2.connect(harmonicGain2);
+                    harmonicGain1.connect(gainNode);
+                    harmonicGain2.connect(gainNode);
+                    
+                    // Connect main oscillator
+                    oscillator.connect(gainNode);
+                    
+                    // Connect to master gain (which is connected to both speakers and recording)
+                    gainNode.connect(this.masterGain);
+                    
+                    // Get volume from slider
+                    const volume = (document.getElementById('volume').value / 100) * 0.2;
+                    
+                    // ADSR envelope
+                    const now = this.audioContext.currentTime;
+                    gainNode.gain.setValueAtTime(0, now);
+                    gainNode.gain.linearRampToValueAtTime(volume, now + 0.02); // Attack
+                    gainNode.gain.exponentialRampToValueAtTime(volume * 0.7, now + 0.1); // Decay
+                    gainNode.gain.setValueAtTime(volume * 0.7, now + 0.3); // Sustain
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5); // Release
+                    
+                    // Start and stop all oscillators
+                    oscillator.start(now);
+                    harmonic1.start(now);
+                    harmonic2.start(now);
+                    
+                    oscillator.stop(now + 0.5);
+                    harmonic1.stop(now + 0.5);
+                    harmonic2.stop(now + 0.5);
+                } catch (e) {
+                    console.log('Audio playback failed:', e);
+                }
+            }
+        }
+        
+        // Initialize the application
+        window.addEventListener('DOMContentLoaded', () => {
+            const symphony = new ParticleSymphony();
+            
+            // Add volume control
+            document.getElementById('volume').addEventListener('input', (e) => {
+                const value = e.target.value;
+                document.getElementById('volumeValue').textContent = value;
+                if (symphony.masterGain) {
+                    symphony.masterGain.gain.setValueAtTime(value / 100, symphony.audioContext.currentTime);
+                }
+            });
+            
+            // Cursor trail enhancement
+            let mouseDown = false;
+            document.addEventListener('mousedown', () => {
+                mouseDown = true;
+                document.getElementById('cursorTrail').classList.add('active');
+            });
+            
+            document.addEventListener('mouseup', () => {
+                mouseDown = false;
+                document.getElementById('cursorTrail').classList.remove('active');
+            });
+            
+            // Fix for mobile cursor
+            document.addEventListener('touchstart', (e) => {
+                const touch = e.touches[0];
+                const trail = document.getElementById('cursorTrail');
+                trail.style.left = touch.clientX - 12 + 'px';
+                trail.style.top = touch.clientY - 12 + 'px';
+                trail.classList.add('active');
+            });
+            
+            document.addEventListener('touchmove', (e) => {
+                const touch = e.touches[0];
+                const trail = document.getElementById('cursorTrail');
+                trail.style.left = touch.clientX - 12 + 'px';
+                trail.style.top = touch.clientY - 12 + 'px';
+            });
+            
+            document.addEventListener('touchend', () => {
+                document.getElementById('cursorTrail').classList.remove('active');
+            });
+        });
+    </script>
+</body>
+</html>
+    </script>
+</body>
+</html>
